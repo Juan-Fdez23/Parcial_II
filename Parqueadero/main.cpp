@@ -1,12 +1,26 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <chrono>
+#include <thread>
+
+
+
+
+struct Values{
+    int CarroVh = 230;
+    int MotoVh = 161;
+    int BiciVh = 10;
+    bool IsDescuento = false;
+    int DVh = 0.1;
+    int RN = 0.35; // Recargo Nocturno.
+};
 
 
 struct Mapa{
     std::string rue_V = "  |  ";
     std::string rue_H = " --- ";
-    std::string Universal = " [U] ";  
+    std::string Universal = " [U] ";
     std::string par = " [P] ";
     std::string pdis = " [P] ";
     std::string dis = "/ / /";
@@ -31,8 +45,22 @@ struct Diseno{
     std::string CPD = "\033[1;38;2;255;255;255;48;2;135;206;235m";
     std::string CDis = "\033[1;38;2;255;255;255;48;2;135;206;235m";
 
+    std::string Disponible = "\033[1;38;2;255;255;255;48;2;0;255;0m";
+    std::string NoDisponible = "\033[1;38;2;255;255;255;48;2;255;0;0m";
+
+
     std::string CFini = "\033[0m";
 };
+
+int Dinero = 0;
+int Tiempo = 0; // Marcado en minutos simulados.
+
+void Reloj(){
+    std::this_thread::sleep_for(std::chrono::seconds(10));
+    Tiempo += 1;
+}
+
+
 
 auto AdaptarTexto = [](std::string texto, std::string CIn, std::string CFin , int ancho){
     int AnchoV = texto.length();
@@ -83,7 +111,7 @@ auto PintarEnVertical = [](std::string celda, std::string matriz[32][32], int n)
     matriz[30][n] = celda;
 };
 
-void Generar_PMapa(){
+void Generar_PMapa(std::string matriz[32][32]){
     Mapa texto;
     Diseno Color;
     int ancho = 0;
@@ -102,9 +130,9 @@ void Generar_PMapa(){
     std::string E = AdaptarTexto(texto.ent, Color.CEnt, Color.CFini, ancho);
     std::string S = AdaptarTexto(texto.sal, Color.CEnd, Color.CFini, ancho);
     std::string I = AdaptarTexto(texto.np, Color.Cnp, Color.CFini, ancho);
-   
 
-    std::string matriz[32][32];
+
+
     PintarEnHorizontal(0, 30, 29, P, matriz); matriz[29][30] = U; // Fila 30 (Matriz[29])
     PintarEnHorizontal(0, 30, 28, P, matriz); matriz[28][30] = U; // Fila 29 (Matriz[28])
     PintarEnHorizontal(0, 30, 26, P, matriz); matriz[26][30] = U; // Fila 27 (Matriz[26])
@@ -114,8 +142,8 @@ void Generar_PMapa(){
     PintarEnHorizontal(0, 30, 21, P, matriz); matriz[21][30] = U; // Fila 22 (Matriz[21])
     PintarEnHorizontal(0, 30, 20, P, matriz); matriz[20][30] = U; // Fila 21 (Matriz[20])
 
-    PintarEnHorizontal(0, 30, 18, P, matriz); PintarEnHorizontal(15, 30, 18, D, matriz); matriz[18][30] = I; // Fila 19 (Matriz[18])
-    PintarEnHorizontal(0, 30, 17, P, matriz); PintarEnHorizontal(15, 30, 17, Pd, matriz);  matriz[17][30] = I; // Fila 18 (Matriz[17])
+    PintarEnHorizontal(0, 30, 18, U, matriz); PintarEnHorizontal(15, 30, 18, D, matriz); matriz[18][30] = I; // Fila 19 (Matriz[18])
+    PintarEnHorizontal(0, 30, 17, U, matriz); PintarEnHorizontal(15, 30, 17, Pd, matriz);  matriz[17][30] = I; // Fila 18 (Matriz[17])
 
     PintarEnHorizontal(0, 30, 16, P, matriz); matriz[16][30] = I; // Fila 17 (Matriz[16])
     PintarEnHorizontal(0, 30, 15, P, matriz); matriz[15][30] = I; // Fila 16 (Matriz[15])
@@ -124,7 +152,7 @@ void Generar_PMapa(){
 
     PintarEnHorizontal(0, 30, 11, D, matriz);PintarEnHorizontal(15, 30, 11, U, matriz) ; matriz[11][30] = B; // Fila 12 (Matriz[11])
     PintarEnHorizontal(0, 30, 10, Pd, matriz); PintarEnHorizontal(15, 30, 10, U, matriz); matriz[10][30] = B; // Fila 11 (Matriz[10])
-    
+
 
     PintarEnHorizontal(0, 30, 8, P, matriz); matriz[9][30] = B; // Fila 9 (Matriz[8])
     PintarEnHorizontal(0, 30, 8, P, matriz); matriz[8][30] = B; // Fila 9 (Matriz[8])
@@ -148,7 +176,7 @@ void Generar_PMapa(){
     PintarEnHorizontal(1, 30, 30, rH, matriz); matriz[30][30] = U; // Fila 31(Matriz[30])
     PintarEnHorizontal(0, 32, 31, W, matriz); // Fila 32 (Matriz[31])
 
-   
+
          // Columnas a pintar
     PintarEnVertical(W, matriz, 0); // Columna 1 (Matriz[n][0]); Pintar Pared.
     PintarEnVertical(W, matriz, 31); // Columna 32 (Matriz[n][31]); Pintar Pared.
@@ -172,7 +200,7 @@ void Generar_PMapa(){
     matriz[0][19] = S;
     matriz[12][31] = S;
     matriz[1][22] = P; matriz[1][24] = P; matriz[1][27] = P; matriz[1][29] = P;
- 
+
     // Pintar matriz
      for(int i=0; i < 32; i++){
         for(int j=0; j < 32; j++){
@@ -182,30 +210,145 @@ void Generar_PMapa(){
     }
 }
 
-void RegistroDeVehiculos(){
+
+
+
+void SistemaDeDisponibilidad(std::string Matriz[32][32], char Tipo, bool IsDis){
+    Diseno D;
+    Mapa M;
+    switch(Tipo){
+        case 1:{
+            if(IsDis == true){
+                for(int i=0; i < 32; i++){
+                for(int j=0; j < 32; j++){
+                    if(Matriz[i][j] == M.par || Matriz[i][j] == M.Universal || Matriz[i][j] == M.pdis){
+                        std::cout << D.Disponible << Matriz[i][j] << D.CFini;
+                    }else if(Matriz[i][j] ==  M.moto || Matriz[i][j] == M.velo){
+                        std::cout << D.NoDisponible << Matriz[i][j] << D.CFini;
+                    }
+                }
+            }
+            }else{
+                for(int i=0; i < 32; i++){
+                for(int j=0; j < 32; j++){
+                    if(Matriz[i][j] == M.par || Matriz[i][j] == M.Universal){
+                        std::cout << D.Disponible << Matriz[i][j] << D.CFini;
+                    }else if(Matriz[i][j] ==  M.moto || Matriz[i][j] == M.velo || Matriz[i][j] == M.pdis){
+                        std::cout << D.NoDisponible << Matriz[i][j] << D.CFini;
+                    }
+                }
+            }
+        }
+        break;
+    };
+
+        case 2:{
+            for(int i=0; i < 32; i++){
+                for(int j=0; j < 32; j++){
+                    if(Matriz[i][j] == M.moto || Matriz[i][j] == M.Universal){
+                        std::cout << D.Disponible << Matriz[i][j] << D.CFini;
+                    }else if(Matriz[i][j] ==  M.par || Matriz[i][j] == M.pdis || Matriz[i][j] == M.velo){
+                        std::cout << D.NoDisponible << Matriz[i][j] << D.CFini;
+                    }
+                }
+            }
+            break;
+        };
+
+        case 3:{
+             for(int i=0; i < 32; i++){
+                for(int j=0; j < 32; j++){
+                    if(Matriz[i][j] == M.velo || Matriz[i][j] == M.Universal){
+                        std::cout << D.Disponible << Matriz[i][j] << D.CFini;
+                    }else if(Matriz[i][j] ==  M.par || Matriz[i][j] == M.pdis || Matriz[i][j] == M.moto){
+                        std::cout << D.NoDisponible << Matriz[i][j] << D.CFini;
+                    }
+                }
+            }
+        }
+        break;
+        default:{
+            std::cout << "Ha habido un error!";
+        }
+    };
 
 }
 
-void SistemaDeCobro(){
+void RegistroDeVehiculos(std::string Nombre, int ID, std::string Placa, char Tipo, std::string HoraDeEntrada, bool EsDis, std::string Matriz[32][32]){
+    switch(Tipo){
+        case 1:{
+            std::cout << "El vehiculo tiene permiso de discapacidad(preferencial)? true/false";
+            std::cin >> EsDis;
+            if(EsDis == true){
+                do{
+                std::cout << "Por favor indique el numero de Placa (Ej: XXX000): ";
+                std::cin >> Placa;
+                if(Placa.length() != 6){
+                    std::cout << "ERROR: son maximo 6 caracteres \n";
+                }else{
+                    std::cout << "Por favor indique la posicion donde desea parquear el carro: ";
+                    SistemaDeDisponibilidad(Matriz, Tipo, EsDis);
+
+                }
+            }while(Placa.length() != 6);
+            }
+            break;
+        };
+        case 2:{
+            do{
+            std::cout << "Por favor indique el numero de Placa (Ej: XXX00X): ";
+            std::cin >> Placa;
+            if(Placa.length() != 6){
+                std::cout << "ERROR: son maximo 6 caracteres \n";
+            }else{
+                std::cout << "Por favor indique la posicion donde desea parquear la moto: ";
+                SistemaDeDisponibilidad(Matriz, Tipo, false);
+            }
+            }while(Placa.length() != 6);
+            break;
+        };
+        case 3:{
+            std::string ID2 = std::to_string(ID);
+            std::string BID = ID2.substr(ID2.length() - 6);
+            std::cout << "Para el registro de su cicla, se tomara los ultimos 6 digitos de su cedula: " << BID << std::endl;
+            std::cout << "Por favor indique la posicion donde desea parquea la bicicleta: ";
+            SistemaDeDisponibilidad(Matriz, Tipo, false);
+        };
+    }
+
 
 }
 
-void SistemaDeDisponibilidad(){
-    
+int SistemaDeCobro(int tipo, int tiempo){
+    Values V;
+    if(tipo == 1) return V.CarroVh * tiempo;
+    if(tipo == 2) return V.MotoVh * tiempo;
+    if(tipo == 3) return V.BiciVh * tiempo;
 }
 
-int Menu(){
+
+
+void AcutalizarSistema(){
+    std::cout << "\033[2J\033[H";
+}
+
+int Lore(){
     int Opcion;
     std::cout << "*|BIENVENIDO AL SIMULADOR DE PARQUEADERO|*";
-    std::cout << "MENU:";
-    std::cout << "";
+    std::cout << "1. Registrar un nuevo vehiculo.";
+    std::cout << "2. Hacer Check-out de un vehiculo.";
+    std::cout << "3. Ver la disponibilidad del parqueadero.";
+
+    std::cin >> Opcion;
+    return Opcion;
 }
 
 void run(){
-    
+
 
 }
 
 int main(){
-   Generar_PMapa();
+    std::string matriz[32][32];
+    Generar_PMapa(matriz);
 }
